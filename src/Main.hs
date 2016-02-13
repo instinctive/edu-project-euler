@@ -5,15 +5,29 @@ module Main where
 import Data.NumInstances.Tuple
 
 import Control.Arrow (first)
-import Data.Array (Array, (!), array, bounds, inRange, listArray)
+import Data.Array (Array, (!), array, bounds, listArray)
 import Data.Char (digitToInt)
-import Data.List (sortBy, tails)
+import Data.List (group, sortBy, tails)
 import System.Environment (getArgs)
 import Text.Printf (printf)
 
 type Int2D = Array (Int,Int) Int
 
 type Euler = Int -> Int
+
+euler012 :: Int -> Int
+euler012 n = head . dropWhile ((<=n).ndiv.factors) $ triangle where
+    ndiv = product . map (succ.length) . group
+
+triangle :: [Int]
+triangle = tail . scanl (+) 0 $ [1..]
+
+factors :: Int -> [Int]
+factors n = go n [] primes where
+    go 1 dd _ = dd
+    go x dd ppp@(p:pp) = case quotRem x p of
+        (q,0) -> go q (p:dd) ppp
+        _     -> go x    dd  pp
 
 euler011 :: Int2D -> Euler
 euler011 a k = maximum $
@@ -163,8 +177,8 @@ run tt = case tt of
   where
     go (n, (f, i, o)) =
         let x = f i in
-        printf "%s: euler%03d %s\n"
-            (if o == x then "Correct" else "Incorrect") n (show i)
+        printf "%s: euler%03d %s => %s (%s)\n"
+            (if o == x then "Correct" else "Incorrect") n (show i) (show x) (show o)
 
 problems :: [(Euler, Int, Int)]
 problems =
@@ -179,5 +193,6 @@ problems =
     , (euler009, 1000, 31875000)
     , (euler010, 2000000, 142913828922)
     , (euler011 data011, 4, 70600674)
+    , (euler012, 500, 76576500)
     ]
 
