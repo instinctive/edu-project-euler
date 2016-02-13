@@ -1,22 +1,56 @@
+{-# LANGUAGE TupleSections #-}
+
 module Main where
 
 import Data.NumInstances.Tuple
 
-import qualified Data.Array as A
-
 import Control.Arrow (first)
+import Data.Array (Array, (!), array, bounds, inRange, listArray)
 import Data.Char (digitToInt)
 import Data.List (sortBy, tails)
 import System.Environment (getArgs)
 import Text.Printf (printf)
 
+type Int2D = Array (Int,Int) Int
+
 type Euler = Int -> Int
 
-euler011 :: A.Array (Int,Int) Int -> Euler
-euler011 a n = undefined
+euler011 :: Int2D -> Euler
+euler011 a k = maximum $
+    map (go xn.horz) [y0..ym] ++
+    map (go yn.vert) [x0..xm] ++
+    map (uncurry go.fmap dn) diag ++
+    map (uncurry go.fmap up) diag
+  where
+    go = maxop (*) k
+    ((y0,x0),(ym,xm)) = bounds a
+    yn = ym - y0 + 1
+    xn = xm - x0 + 1
+    horz y x   = a ! (     y, x0 + x)
+    vert x y   = a ! (y0 + y,      x)
+    dn (y,x) i = a ! (y0+y+i, x0+x+i)
+    up (y,x) i = a ! (ym-y-i, x0+x+i)
+    diag =
+        [ (n, (y,x))
+        | (y,x) <- map (0,) [0..xn-1] ++ map (,0) [1..yn-1]
+        , let n = (yn - y) `min` (xn - x)
+        , n >= k
+        ]
 
-data011 :: A.Array (Int,Int) Int
-data011 = A.listArray ((0,0),(20,20))
+maxop :: (Int -> Int -> Int) -> Int -> Int -> (Int -> Int) -> Int
+maxop op k n f
+    | k > n = error $ "maxop: " ++ show (k, n)
+    | otherwise = maximum . map (\i -> a!(k,i)) $ [0..n-k] where
+        a :: Int2D
+        a = array ((1,0),(k,n-1)) $ concatMap elts [1..k]
+        elts :: Int -> [((Int,Int),Int)]
+        elts 1 = [ ((1,i),x) | i <- [0..n-1], let x = f     i ]
+        elts v = [ ((v,i),x) | i <- [0..n-v], let x = get v i ]
+        get :: Int -> Int -> Int
+        get v i = let d = v `div` 2 in op (a!(d,i)) (a!(v-d,i+d))
+
+data011 :: Int2D
+data011 = listArray ((0,0),(19,19))
     [ 08, 02, 22, 97, 38, 15, 00, 40, 00, 75, 04, 05, 07, 78, 52, 12, 50, 77, 91, 08
     , 49, 49, 99, 40, 17, 81, 18, 57, 60, 87, 17, 40, 98, 43, 69, 48, 04, 56, 62, 00
     , 81, 49, 31, 73, 55, 79, 14, 29, 93, 71, 40, 67, 53, 88, 30, 03, 49, 13, 36, 65
@@ -131,8 +165,8 @@ run tt = case tt of
   where
     go (n, (f, i, o)) =
         let x = f i in
-        printf "%s: euler%03d %s => %s\n"
-            (show $ o == x) n (show i) (show x)
+        printf "%s: euler%03d %s\n"
+            (if o == x then "Correct" else "Incorrect") n (show i)
 
 problems :: [(Euler, Int, Int)]
 problems =
@@ -146,5 +180,6 @@ problems =
     , (euler008 data008, 13, 23514624000)
     , (euler009, 1000, 31875000)
     , (euler010, 2000000, 142913828922)
+    , (euler011 data011, 4, 70600674)
     ]
 
