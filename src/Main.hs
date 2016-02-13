@@ -4,16 +4,105 @@ module Main where
 
 import Data.NumInstances.Tuple
 
+import qualified Data.IntMap.Strict as I
+
 import Control.Arrow (first)
 import Data.Array (Array, (!), array, bounds, listArray)
 import Data.Char (digitToInt)
-import Data.List (group, sortBy, tails)
+import Data.List (foldl', group, maximumBy, sortBy, tails)
+import Data.Ord (comparing)
 import System.Environment (getArgs)
 import Text.Printf (printf)
 
 type Int2D = Array (Int,Int) Int
 
 type Euler = Int -> Int
+
+euler018 :: [[Int]] -> Euler
+euler018 xxx _ = go (reverse xxx) where
+    go [[x]] = x
+    go (xx:yy:zzz) = go $ tri xx yy : zzz
+    go zzz = error $ "go: " ++ show zzz
+    tri xx yy = zipWith (+) yy (zipWith max xx (tail xx))
+
+data018 :: [[Int]]
+data018 =
+    [ [ 75 ]
+    , [ 95, 64 ]
+    , [ 17, 47, 82 ]
+    , [ 18, 35, 87, 10 ]
+    , [ 20, 04, 82, 47, 65 ]
+    , [ 19, 01, 23, 75, 03, 34 ]
+    , [ 88, 02, 77, 73, 07, 63, 67 ]
+    , [ 99, 65, 04, 28, 06, 16, 70, 92 ]
+    , [ 41, 41, 26, 56, 83, 40, 80, 70, 33 ]
+    , [ 41, 48, 72, 33, 47, 32, 37, 16, 94, 29 ]
+    , [ 53, 71, 44, 65, 25, 43, 91, 52, 97, 51, 14 ]
+    , [ 70, 11, 33, 28, 77, 73, 17, 78, 39, 68, 17, 57 ]
+    , [ 91, 71, 52, 38, 17, 14, 91, 43, 58, 50, 27, 29, 48 ]
+    , [ 63, 66, 04, 68, 89, 53, 67, 30, 73, 16, 69, 87, 40, 31 ]
+    , [ 04, 62, 98, 27, 23, 09, 70, 98, 73, 93, 38, 53, 60, 04, 23 ]
+    ]
+
+euler017 :: Euler
+euler017 n = sum . map say $ [1..n] where
+    say n | n >= 1000 =
+        let (q,r) = quotRem n 1000 in
+        say q + thou + if r == 0 then 0 else plus + say r
+    say n | n >= 100 =
+        let (q,r) = quotRem n 100 in
+        say q + hund + if r == 0 then 0 else plus + say r
+    say n | n >= 20 =
+        let (q,r) = quotRem n 10 in
+        tens q + if r == 0 then 0 else ones r
+    say n | n >= 10 = teen (n-10)
+    say n = ones n
+
+    ones = (!!) . map length . words $ "zero one two three four five six seven eight nine"
+    teen = (!!) . map length . words $ "ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen"
+    tens = (!!) . map length . words $ "zero ten twenty thirty forty fifty sixty seventy eighty ninety"
+    hund = length "hundred"
+    thou = length "thousand"
+    plus = length "and"
+
+euler016 :: Euler
+euler016 n = sum . map digitToInt . show . (2^) $ n
+
+euler015 :: Euler
+euler015 n = a ! (0,0) where
+    a = array ((0,0),(n,n)) $
+        ((n,n),1) :
+        [ ((y,x), at (y+1) x + at y (x+1))
+        | y <- [0..n]
+        , x <- [0..n]
+        , y * x /= n * n
+        ]
+    at y x
+        | y > n || x > n = 0
+        | otherwise      = a ! (y,x)
+
+euler014 :: Euler
+euler014 n = fst.fst.foldl' go ((1,1), I.singleton 1 1) . takeWhile (<n) $ [1..] where
+    go ((z,v),m) z' =
+        let (m',v') = get m z' in
+        if v' > v
+        then ((z', v'), m')
+        else ((z , v ), m')
+    get m i
+        | i > 100000 = let (m',v) = get m (coll i) in (m', v+1)
+        | otherwise  = case I.lookup i m of
+            Just v -> (m,v)
+            Nothing ->
+                let (m',v) = get m (coll i) in
+                (I.insert i (v + 1) m', v + 1)
+    coll i | even i    = i `div` 2
+           | otherwise = i * 3 + 1
+
+collatz :: Int -> [Int]
+collatz 1 = [1]
+collatz n = n : collatz (go n) where
+    go n | even n    = n `div` 2
+         | otherwise = 3 * n + 1
 
 euler013 :: [Integer] -> Euler
 euler013 xx n = read . take n . show . sum $ xx
@@ -302,5 +391,10 @@ problems =
     , (euler011 data011, 4, 70600674)
     , (euler012, 500, 76576500)
     , (euler013 data013, 10, 5537376230)
+    , (euler014, 1000000, 837799)
+    , (euler015, 20, 137846528820)
+    , (euler016, 1000, 1366)
+    , (euler017, 1000, 21124)
+    , (euler018 data018, 0, 1074)
     ]
 
