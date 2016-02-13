@@ -18,6 +18,35 @@ type Int2D = Array (Int,Int) Int
 
 type Euler = Int -> Int
 
+euler025 n = go 2 1 1 where
+    limit = 10 ^ (n-1)
+    go i x y | x >= limit = i
+             | otherwise  = go (i+1) (x+y) x
+
+euler024 v = frobulate incrs [0..9] where
+    frobulate [] _ = []
+    frobulate (i:ii) xx = let x = xx!!i in x : frobulate ii (delete x xx)
+    incrs = go v (map fact $ reverse [0..9])
+    fact n = product [1..n]
+    go n [] = []
+    go 0 xx = map (const 0) xx
+    go n (x:xx) = case quotRem n x of
+        (0,_) -> 0 : go n xx
+        (q,r) -> q : go r xx
+
+euler023 n = sum . go [1..n] $ I.keys m where
+    m = I.fromList [ (i,0) | x <- src, y <- src, let i = x + y, i <= n ]
+    src = takeWhile (< n) abundant
+    go [] _  = []
+    go ii [] = ii
+    go (i:ii) sss@(s:ss)
+        | i < s     = i : go ii sss
+        | otherwise =     go ii ss
+
+abundant :: [Int]
+abundant = filter ok [1..] where
+    ok x = x < sum (divisors x)
+
 -- [*Main System.IO]
 -- > withFile "data/p022_names.clean" ReadMode (\h -> hGetContents h >>= print . euler022)
 -- 871198282
@@ -441,5 +470,7 @@ problems =
     , (euler019, 0, 171)
     , (euler020, 100, 648)
     , (euler021, 10000, 31626)
+    , undefined
+    , (euler023, 28123, 0)
     ]
 
