@@ -8,8 +8,8 @@ import qualified Data.IntMap.Strict as I
 
 import Control.Arrow (first)
 import Data.Array (Array, (!), array, bounds, listArray)
-import Data.Char (digitToInt)
-import Data.List (foldl', group, maximumBy, sortBy, tails)
+import Data.Char (digitToInt, ord)
+import Data.List (delete, foldl', group, maximumBy, nub, sort, sortBy, subsequences, tails)
 import Data.Ord (comparing)
 import System.Environment (getArgs)
 import Text.Printf (printf)
@@ -17,6 +17,48 @@ import Text.Printf (printf)
 type Int2D = Array (Int,Int) Int
 
 type Euler = Int -> Int
+
+-- [*Main System.IO]
+-- > withFile "data/p022_names.clean" ReadMode (\h -> hGetContents h >>= print . euler022)
+-- 871198282
+
+--euler022 :: Euler
+euler022 :: String -> Int
+euler022 = go where
+    go = sum . zipWith (*) [1..] . map score . sort . lines
+    score = sum . map (succ.(+ ordA).ord)
+    ordA = - ord 'A'
+
+euler021 :: Euler
+euler021 n = fst . foldl' go (0, I.singleton 1 1) $ [1..n-1] where
+    go (v,m) x = (v',m') where
+        y  = sum $ divisors x
+        m' = I.insert x y m
+        v' = if y >= x then v else case I.lookup y m of
+            Nothing -> v -- error $ "lookup: " ++ show (v,x,s)
+            Just x' -> if x' == x then v + y + x else v
+
+divisors :: Int -> [Int]
+divisors n = delete n . nub . map product . subsequences . factors $ n
+
+euler020 :: Euler
+euler020 n = sum . map digitToInt . show . product $ [1..fromIntegral n]
+
+euler019 :: Euler
+euler019 _ = length . filter first . twentieth $ zip days dotw where
+    --      Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec
+    year = [ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 ]
+    leap = [ 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 ]
+    dotw = tail $ cycle [0..6]
+    days =
+        [ (y,m,d)
+        | (y, mm) <- zip [1900..] $ year : cycle [year,year,year,leap]
+        , (m, nd) <- zip [1..] mm
+        , d <- [1..nd]
+        ]
+    twentieth = takeWhile (<= ((2000,12,31),7)) . dropWhile (<= ((1901,1,1),0))
+    first ((_,_,1),0) = True
+    first _           = False
 
 euler018 :: [[Int]] -> Euler
 euler018 xxx _ = go (reverse xxx) where
@@ -396,5 +438,8 @@ problems =
     , (euler016, 1000, 1366)
     , (euler017, 1000, 21124)
     , (euler018 data018, 0, 1074)
+    , (euler019, 0, 171)
+    , (euler020, 100, 648)
+    , (euler021, 10000, 31626)
     ]
 
