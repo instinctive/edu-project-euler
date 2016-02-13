@@ -38,16 +38,14 @@ euler011 a k = maximum $
         ]
 
 maxop :: (Int -> Int -> Int) -> Int -> Int -> (Int -> Int) -> Int
-maxop op k n f
-    | k > n = error $ "maxop: " ++ show (k, n)
-    | otherwise = maximum . map (\i -> a!(k,i)) $ [0..n-k] where
-        a :: Int2D
-        a = array ((1,0),(k,n-1)) $ concatMap elts [1..k]
-        elts :: Int -> [((Int,Int),Int)]
-        elts 1 = [ ((1,i),x) | i <- [0..n-1], let x = f     i ]
-        elts v = [ ((v,i),x) | i <- [0..n-v], let x = get v i ]
-        get :: Int -> Int -> Int
-        get v i = let d = v `div` 2 in op (a!(d,i)) (a!(v-d,i+d))
+maxop op k n f = maximum . map (\i -> a!(k,i)) $ [0..n-k] where
+    a :: Int2D
+    a = array ((1,0),(k,n-1)) $ concatMap elts [1..k]
+    elts :: Int -> [((Int,Int),Int)]
+    elts 1 = [ ((1,i),x) | i <- [0..n-1], let x = f     i ]
+    elts v = [ ((v,i),x) | i <- [0..n-v], let x = get v i ]
+    get :: Int -> Int -> Int
+    get v i = let d = v `div` 2 in (a!(d,i)) `op` (a!(v-d,i+d))
 
 data011 :: Int2D
 data011 = listArray ((0,0),(19,19))
